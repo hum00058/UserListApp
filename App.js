@@ -1,6 +1,13 @@
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useState } from 'react'
-import { StyleSheet, View, Text, FlatList, Pressable } from 'react-native'
+import {
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  Platform
+} from 'react-native'
 import UserAvatar from 'react-native-user-avatar'
 
 export default function Users() {
@@ -13,34 +20,31 @@ export default function Users() {
 
   const getUsers = async (size = 10) => {
     try {
-      const url = `https://random-data-api.com/api/v2/users?size=${size}&is_xml=true`
-      const data = await fetch(url).then((res) => res.json())
-      const filteredData = data.map((item) => {
-        return {
-          uid: item.uid,
-          first_name: item.first_name,
-          last_name: item.last_name,
-          avatar: item.avatar
-        }
-      })
-      setUsers(filteredData)
-    } catch (error) {}
+      const url = `https://random-data-api.com/api/v2/users?size=${size}`
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Error fetching data')
+      }
+
+      const data = await response.json()
+      setUsers(data)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  const addUsers = async (size = 1) => {
+  const addUsers = async (size) => {
     try {
-      const url = `https://random-data-api.com/api/v2/users?size=${size}&is_xml=true`
-      const data = await fetch(url).then((res) => res.json())
-      const filteredData = data.map((item) => {
-        return {
-          uid: item.uid,
-          first_name: item.first_name,
-          last_name: item.last_name,
-          avatar: item.avatar
-        }
-      })
-      setUsers([...filteredData, ...users])
-    } catch (error) {}
+      const url = `https://random-data-api.com/api/v2/users?size=1`
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Error fetching data')
+      }
+      const data = await response.json()
+      setUsers([data, ...users])
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   const onRefresh = () => {
@@ -51,11 +55,23 @@ export default function Users() {
 
   const ItemComponent = ({ item }) => (
     <View style={styles.item}>
-      <UserAvatar size={50} src={item.avatar} />
-      <View style={styles.names}>
-        <Text>{item.first_name}</Text>
-        <Text>{item.last_name}</Text>
-      </View>
+      {Platform.OS === 'android' ? (
+        <>
+          <UserAvatar size={50} src={item.avatar} />
+          <View style={styles.names}>
+            <Text>{item.first_name}</Text>
+            <Text>{item.last_name}</Text>
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.names}>
+            <Text>{item.first_name}</Text>
+            <Text>{item.last_name}</Text>
+          </View>
+          <UserAvatar size={50} src={item.avatar} />
+        </>
+      )}
     </View>
   )
 
@@ -63,6 +79,7 @@ export default function Users() {
     <View style={styles.container}>
       <StatusBar style="auto" />
       <FlatList
+        style={styles.list}
         data={users}
         renderItem={({ item }) => {
           return <ItemComponent item={item} />
@@ -73,7 +90,7 @@ export default function Users() {
         onRefresh={onRefresh}
         refreshing={refreshing}
       />
-      <Pressable onPress={() => addUsers(2)}>
+      <Pressable onPress={() => addUsers(1)}>
         <View style={styles.floatingActionButton}>
           <Text style={styles.floatingActionButton.Plus}>+</Text>
         </View>
@@ -90,14 +107,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 48
   },
-  item: {
+  list: {
     width: '100%',
+    padding: 40
+  },
+  item: {
     paddingVertical: 12,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    borderBottomWidth: 1
+    justifyContent: 'space-between',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#ddd'
   },
   floatingActionButton: {
     width: 60,
@@ -105,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#2daaf4',
     position: 'absolute',
-    bottom: 20,
+    bottom: 40,
     right: -160,
     Plus: {
       color: '#fff',
